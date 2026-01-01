@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Space Invaders</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    #game {
+      display: flex;
+      gap: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    canvas {
+      border: 3px solid #00ff41;
+      background: #000;
+      border-radius: 5px;
+    }
+
+    #ui {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      color: #00ff41;
+      min-width: 200px;
+    }
+
+    #score, #high-score, #lives, #wave, #controls {
+      background: rgba(0, 255, 65, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(0, 255, 65, 0.3);
+    }
+
+    #score {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #high-score {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffff00;
+      cursor: pointer;
+    }
+
+    #lives {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #wave {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ffff;
+    }
+
+    #controls {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #game-over, #victory {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
+      padding: 40px;
+      border-radius: 15px;
+      text-align: center;
+      display: none;
+      border: 2px solid #00ff41;
+    }
+
+    #game-over h2, #victory h2 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    #victory h2 {
+      color: #ffff00;
+    }
+
+    #game-over button, #victory button {
+      margin-top: 20px;
+      padding: 15px 40px;
+      font-size: 18px;
+      background: #00ff41;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: bold;
+    }
+
+    #game-over button:hover, #victory button:hover {
+      background: #00cc33;
+    }
+
+    #pause-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: #00ff41;
+      padding: 40px 60px;
+      border-radius: 15px;
+      text-align: center;
+      display: none;
+      font-size: 48px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      border: 2px solid #00ff41;
+    }
+
+    .name-input-section {
+      margin: 20px 0;
+    }
+
+    .name-input-section label {
+      display: block;
+      margin-bottom: 10px;
+      color: #00ff41;
+    }
+
+    .name-input-section input {
+      padding: 10px 15px;
+      font-size: 18px;
+      font-family: 'Arial', sans-serif;
+      background: #111;
+      color: #00ff41;
+      border: 2px solid #00ff41;
+      border-radius: 5px;
+      text-transform: uppercase;
+      width: 120px;
+      text-align: center;
+    }
+
+    .name-input-section input:focus {
+      outline: none;
+      border-color: #ffff00;
+    }
+
+    .leaderboard {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .leaderboard h3 {
+      text-align: center;
+      color: #00ff41;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .leaderboard table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .leaderboard th, .leaderboard td {
+      padding: 5px 10px;
+      font-size: 14px;
+    }
+
+    .leaderboard th {
+      color: #00ff41;
+      border-bottom: 1px solid #00ff41;
+    }
+
+    .leaderboard td {
+      color: #00cc33;
+    }
+
+    .leaderboard .highlight {
+      color: #ffff00;
+      font-weight: bold;
+    }
+
+    .submit-btn {
+      margin-top: 10px;
+      padding: 10px 30px;
+      font-size: 16px;
+      background: #00ff41;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .submit-btn:hover {
+      background: #00cc33;
+    }
+
+    #leaderboard-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
+      padding: 40px;
+      border-radius: 15px;
+      text-align: center;
+      display: none;
+      min-width: 300px;
+      border: 2px solid #00ff41;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <canvas id="board" width="800" height="600"></canvas>
+    <div id="ui">
+      <div id="score">Score: 0</div>
+      <div id="high-score" onclick="showLeaderboardOverlay()">High Score: 0</div>
+      <div id="lives">Lives: 3</div>
+      <div id="wave">Wave: 1</div>
+      <div id="controls">
+        ← → Move Ship<br>
+        Space Shoot<br>
+        P/Esc Pause<br>
+        R Restart
+      </div>
+    </div>
+  </div>
+
+  <div id="pause-overlay">PAUSED</div>
+
+  <div id="leaderboard-overlay">
+    <h2 style="color:#00ff41;margin-bottom:20px;">LEADERBOARD</h2>
+    <div id="leaderboard-standalone" class="leaderboard"></div>
+    <button onclick="hideLeaderboardOverlay()">CLOSE</button>
+  </div>
+
+  <div id="game-over">
+    <h2>GAME OVER</h2>
+    <div id="final-score"></div>
+    <div id="name-input-gameover" class="name-input-section" style="display: none;">
+      <label>Enter Your Name:</label>
+      <input type="text" id="player-name-gameover" maxlength="10" placeholder="AAA">
+      <button class="submit-btn" onclick="submitScore('gameover')">Submit</button>
+    </div>
+    <div id="leaderboard-gameover" class="leaderboard"></div>
+    <button onclick="restartGame()">Play Again</button>
+  </div>
+
+  <div id="victory">
+    <h2>VICTORY!</h2>
+    <div id="victory-score"></div>
+    <div id="name-input-victory" class="name-input-section" style="display: none;">
+      <label>Enter Your Name:</label>
+      <input type="text" id="player-name-victory" maxlength="10" placeholder="AAA">
+      <button class="submit-btn" onclick="submitScore('victory')">Submit</button>
+    </div>
+    <div id="leaderboard-victory" class="leaderboard"></div>
+    <button onclick="restartGame()">Play Again</button>
+  </div>
+
+  <script>
+    // Leaderboard functions
+    const MAX_LEADERBOARD_ENTRIES = 10;
+    let pendingScore = 0;
+
+    function loadLeaderboard() {
+      const saved = localStorage.getItem('spaceinvaders-leaderboard');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { return []; }
+      }
+      return [];
+    }
+
+    function saveLeaderboard(entries) {
+      localStorage.setItem('spaceinvaders-leaderboard', JSON.stringify(entries));
+    }
+
+    function loadLastName() {
+      return localStorage.getItem('spaceinvaders-last-name') || '';
+    }
+
+    function saveLastName(name) {
+      localStorage.setItem('spaceinvaders-last-name', name);
+    }
+
+    function isHighScore(score) {
+      if (score === 0) return false;
+      const entries = loadLeaderboard();
+      if (entries.length < MAX_LEADERBOARD_ENTRIES) return true;
+      return score > entries[entries.length - 1].score;
+    }
+
+    function addToLeaderboard(name, score) {
+      const entries = loadLeaderboard();
+      entries.push({ name: name.toUpperCase(), score: score });
+      entries.sort((a, b) => b.score - a.score);
+      const trimmed = entries.slice(0, MAX_LEADERBOARD_ENTRIES);
+      saveLeaderboard(trimmed);
+      return trimmed;
+    }
+
+    function renderLeaderboard(containerId, highlightScore = null) {
+      const container = document.getElementById(containerId);
+      const entries = loadLeaderboard();
+
+      if (entries.length === 0) {
+        container.innerHTML = '<h3>TOP SCORES</h3><p style="text-align:center;color:#00cc33;">No scores yet</p>';
+        return;
+      }
+
+      let html = '<h3>TOP SCORES</h3><table><thead><tr><th>#</th><th>NAME</th><th>SCORE</th></tr></thead><tbody>';
+      entries.forEach((entry, i) => {
+        const cls = highlightScore !== null && entry.score === highlightScore ? ' class="highlight"' : '';
+        html += `<tr${cls}><td>${i + 1}</td><td>${entry.name}</td><td>${entry.score}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function submitScore(type) {
+      const inputId = type === 'gameover' ? 'player-name-gameover' : 'player-name-victory';
+      const nameInputSection = type === 'gameover' ? 'name-input-gameover' : 'name-input-victory';
+      const leaderboardId = type === 'gameover' ? 'leaderboard-gameover' : 'leaderboard-victory';
+
+      const nameInput = document.getElementById(inputId);
+      const name = nameInput.value.trim() || 'AAA';
+
+      saveLastName(name);
+      addToLeaderboard(name, pendingScore);
+
+      document.getElementById(nameInputSection).style.display = 'none';
+      renderLeaderboard(leaderboardId, pendingScore);
+    }
+
+    function showLeaderboardOverlay() {
+      renderLeaderboard('leaderboard-standalone');
+      document.getElementById('leaderboard-overlay').style.display = 'block';
+    }
+
+    function hideLeaderboardOverlay() {
+      document.getElementById('leaderboard-overlay').style.display = 'none';
+    }
+
+    // Constants
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 600;
+    const PLAYER_WIDTH = 50;
+    const PLAYER_HEIGHT = 30;
+    const PLAYER_SPEED = 6;
+    const BULLET_WIDTH = 4;
+    const BULLET_HEIGHT = 15;
+    const BULLET_SPEED = 8;
+    const ALIEN_ROWS = 5;
+    const ALIEN_COLS = 11;
+    const ALIEN_WIDTH = 40;
+    const ALIEN_HEIGHT = 30;
+    const ALIEN_PADDING = 10;
+    const ALIEN_OFFSET_TOP = 60;
+    const ALIEN_OFFSET_LEFT = 50;
+    const ALIEN_BOMB_SPEED = 4;
+    const SHIELD_COUNT = 4;
+    const SHIELD_WIDTH = 70;
+    const SHIELD_HEIGHT = 50;
+    const INITIAL_LIVES = 3;
+
+    // Alien types and points
+    const ALIEN_TYPES = [
+      { points: 30, color: '#ff0000' },  // Top row - red
+      { points: 20, color: '#ff8800' },  // Row 2 - orange
+      { points: 20, color: '#ffff00' },  // Row 3 - yellow
+      { points: 10, color: '#00ff00' },  // Row 4 - green
+      { points: 10, color: '#00ffff' }   // Row 5 - cyan
+    ];
+
+    // UFO
+    const UFO_WIDTH = 60;
+    const UFO_HEIGHT = 25;
+    const UFO_SPEED = 3;
+    const UFO_POINTS = [50, 100, 150, 300];
+
+    // Game State
+    function createGameState() {
+      let state = {
+        player: { x: CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2, y: CANVAS_HEIGHT - PLAYER_HEIGHT - 20 },
+        bullets: [],
+        aliens: [],
+        alienBombs: [],
+        shields: [],
+        ufo: null,
+        alienDirection: 1,
+        alienSpeed: 1,
+        alienMoveTimer: 0,
+        alienMoveInterval: 30,
+        score: 0,
+        highScore: 0,
+        lives: INITIAL_LIVES,
+        wave: 1,
+        gameOver: false,
+        victory: false,
+        isPaused: false,
+        leftPressed: false,
+        rightPressed: false,
+        canShoot: true,
+        ufoTimer: 0,
+        ufoInterval: 1000
+      };
+
+      function initAliens() {
+        state.aliens = [];
+        for (let row = 0; row < ALIEN_ROWS; row++) {
+          for (let col = 0; col < ALIEN_COLS; col++) {
+            state.aliens.push({
+              x: ALIEN_OFFSET_LEFT + col * (ALIEN_WIDTH + ALIEN_PADDING),
+              y: ALIEN_OFFSET_TOP + row * (ALIEN_HEIGHT + ALIEN_PADDING),
+              row: row,
+              active: true
+            });
+          }
+        }
+      }
+
+      function initShields() {
+        state.shields = [];
+        const shieldSpacing = CANVAS_WIDTH / (SHIELD_COUNT + 1);
+        for (let i = 0; i < SHIELD_COUNT; i++) {
+          const shieldX = shieldSpacing * (i + 1) - SHIELD_WIDTH / 2;
+          const shieldY = CANVAS_HEIGHT - 150;
+          // Create shield as array of small blocks
+          for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 7; col++) {
+              // Skip corners for rounded shape
+              if ((row === 0 && (col === 0 || col === 6)) ||
+                  (row >= 3 && col >= 2 && col <= 4)) continue;
+              state.shields.push({
+                x: shieldX + col * 10,
+                y: shieldY + row * 10,
+                width: 10,
+                height: 10,
+                active: true
+              });
+            }
+          }
+        }
+      }
+
+      function loadHighScore() {
+        const entries = loadLeaderboard();
+        state.highScore = entries.length > 0 ? entries[0].score : 0;
+      }
+
+      return {
+        init() {
+          loadHighScore();
+          initAliens();
+          initShields();
+          state.player.x = CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2;
+          state.bullets = [];
+          state.alienBombs = [];
+          state.ufo = null;
+          state.alienDirection = 1;
+          state.alienSpeed = 1 + (state.wave - 1) * 0.2;
+          state.alienMoveTimer = 0;
+          state.alienMoveInterval = Math.max(10, 30 - (state.wave - 1) * 3);
+          state.gameOver = false;
+          state.victory = false;
+          state.isPaused = false;
+          state.canShoot = true;
+          state.ufoTimer = 0;
+        },
+
+        reset() {
+          state.score = 0;
+          state.lives = INITIAL_LIVES;
+          state.wave = 1;
+          this.init();
+        },
+
+        nextWave() {
+          state.wave++;
+          state.bullets = [];
+          state.alienBombs = [];
+          state.ufo = null;
+          this.init();
+        },
+
+        shoot() {
+          if (!state.canShoot || state.isPaused || state.gameOver || state.victory) return;
+          state.bullets.push({
+            x: state.player.x + PLAYER_WIDTH / 2 - BULLET_WIDTH / 2,
+            y: state.player.y - BULLET_HEIGHT,
+            width: BULLET_WIDTH,
+            height: BULLET_HEIGHT
+          });
+          state.canShoot = false;
+          setTimeout(() => state.canShoot = true, 300);
+        },
+
+        update() {
+          if (state.gameOver || state.victory || state.isPaused) return;
+
+          // Move player
+          if (state.leftPressed) {
+            state.player.x = Math.max(0, state.player.x - PLAYER_SPEED);
+          }
+          if (state.rightPressed) {
+            state.player.x = Math.min(CANVAS_WIDTH - PLAYER_WIDTH, state.player.x + PLAYER_SPEED);
+          }
+
+          // Move bullets
+          state.bullets = state.bullets.filter(b => {
+            b.y -= BULLET_SPEED;
+            return b.y > -BULLET_HEIGHT;
+          });
+
+          // Move alien bombs
+          state.alienBombs = state.alienBombs.filter(b => {
+            b.y += ALIEN_BOMB_SPEED;
+            return b.y < CANVAS_HEIGHT;
+          });
+
+          // Move aliens
+          state.alienMoveTimer++;
+          if (state.alienMoveTimer >= state.alienMoveInterval) {
+            state.alienMoveTimer = 0;
+            let hitEdge = false;
+            const activeAliens = state.aliens.filter(a => a.active);
+
+            for (let alien of activeAliens) {
+              if ((alien.x + ALIEN_WIDTH >= CANVAS_WIDTH - 10 && state.alienDirection > 0) ||
+                  (alien.x <= 10 && state.alienDirection < 0)) {
+                hitEdge = true;
+                break;
+              }
+            }
+
+            if (hitEdge) {
+              state.alienDirection *= -1;
+              for (let alien of activeAliens) {
+                alien.y += 20;
+              }
+              // Speed up slightly
+              state.alienMoveInterval = Math.max(5, state.alienMoveInterval - 1);
+            } else {
+              for (let alien of activeAliens) {
+                alien.x += 10 * state.alienDirection * state.alienSpeed;
+              }
+            }
+
+            // Random alien shoots
+            if (activeAliens.length > 0 && Math.random() < 0.3) {
+              const shooter = activeAliens[Math.floor(Math.random() * activeAliens.length)];
+              state.alienBombs.push({
+                x: shooter.x + ALIEN_WIDTH / 2 - 3,
+                y: shooter.y + ALIEN_HEIGHT,
+                width: 6,
+                height: 15
+              });
+            }
+          }
+
+          // UFO logic
+          state.ufoTimer++;
+          if (!state.ufo && state.ufoTimer >= state.ufoInterval) {
+            state.ufoTimer = 0;
+            state.ufoInterval = 800 + Math.random() * 600;
+            state.ufo = {
+              x: Math.random() > 0.5 ? -UFO_WIDTH : CANVAS_WIDTH,
+              y: 25,
+              direction: Math.random() > 0.5 ? 1 : -1
+            };
+            if (state.ufo.x < 0) state.ufo.direction = 1;
+            else state.ufo.direction = -1;
+          }
+
+          if (state.ufo) {
+            state.ufo.x += UFO_SPEED * state.ufo.direction;
+            if (state.ufo.x < -UFO_WIDTH || state.ufo.x > CANVAS_WIDTH) {
+              state.ufo = null;
+            }
+          }
+
+          // Collision: bullets vs aliens
+          for (let bullet of state.bullets) {
+            for (let alien of state.aliens) {
+              if (!alien.active) continue;
+              if (this.collides(bullet, { x: alien.x, y: alien.y, width: ALIEN_WIDTH, height: ALIEN_HEIGHT })) {
+                alien.active = false;
+                bullet.y = -100; // Mark for removal
+                state.score += ALIEN_TYPES[alien.row].points;
+                if (state.score > state.highScore) state.highScore = state.score;
+                // Speed up when fewer aliens
+                const remaining = state.aliens.filter(a => a.active).length;
+                if (remaining > 0 && remaining <= 10) {
+                  state.alienMoveInterval = Math.max(3, 10 - (10 - remaining));
+                }
+              }
+            }
+
+            // Bullets vs UFO
+            if (state.ufo && this.collides(bullet, { x: state.ufo.x, y: state.ufo.y, width: UFO_WIDTH, height: UFO_HEIGHT })) {
+              state.score += UFO_POINTS[Math.floor(Math.random() * UFO_POINTS.length)];
+              if (state.score > state.highScore) state.highScore = state.score;
+              state.ufo = null;
+              bullet.y = -100;
+            }
+
+            // Bullets vs shields
+            for (let shield of state.shields) {
+              if (shield.active && this.collides(bullet, shield)) {
+                shield.active = false;
+                bullet.y = -100;
+              }
+            }
+          }
+
+          // Collision: alien bombs vs player
+          for (let bomb of state.alienBombs) {
+            if (this.collides(bomb, { x: state.player.x, y: state.player.y, width: PLAYER_WIDTH, height: PLAYER_HEIGHT })) {
+              bomb.y = CANVAS_HEIGHT + 100;
+              state.lives--;
+              if (state.lives <= 0) state.gameOver = true;
+            }
+
+            // Bombs vs shields
+            for (let shield of state.shields) {
+              if (shield.active && this.collides(bomb, shield)) {
+                shield.active = false;
+                bomb.y = CANVAS_HEIGHT + 100;
+              }
+            }
+          }
+
+          // Check aliens reached bottom or hit player
+          for (let alien of state.aliens) {
+            if (!alien.active) continue;
+            if (alien.y + ALIEN_HEIGHT >= state.player.y) {
+              state.gameOver = true;
+              return;
+            }
+          }
+
+          // Check victory
+          if (state.aliens.filter(a => a.active).length === 0) {
+            if (state.wave >= 10) {
+              state.victory = true;
+            } else {
+              this.nextWave();
+            }
+          }
+        },
+
+        collides(a, b) {
+          return a.x < b.x + b.width && a.x + a.width > b.x &&
+                 a.y < b.y + b.height && a.y + a.height > b.y;
+        },
+
+        togglePause() {
+          state.isPaused = !state.isPaused;
+          document.getElementById('pause-overlay').style.display = state.isPaused ? 'block' : 'none';
+        },
+
+        getState() { return state; }
+      };
+    }
+
+    // Renderer
+    function createRenderer(canvas, gameState) {
+      const ctx = canvas.getContext('2d');
+
+      function drawAlien(x, y, row) {
+        const color = ALIEN_TYPES[row].color;
+        ctx.fillStyle = color;
+
+        // Different shapes per row type
+        if (row === 0) {
+          // Top alien - octopus-like
+          ctx.fillRect(x + 15, y, 10, 5);
+          ctx.fillRect(x + 10, y + 5, 20, 10);
+          ctx.fillRect(x + 5, y + 15, 30, 10);
+          ctx.fillRect(x + 5, y + 25, 5, 5);
+          ctx.fillRect(x + 30, y + 25, 5, 5);
+          ctx.fillRect(x + 12, y + 25, 5, 5);
+          ctx.fillRect(x + 23, y + 25, 5, 5);
+        } else if (row <= 2) {
+          // Middle aliens - crab-like
+          ctx.fillRect(x + 10, y, 20, 5);
+          ctx.fillRect(x + 5, y + 5, 30, 10);
+          ctx.fillRect(x, y + 15, 40, 10);
+          ctx.fillRect(x + 5, y + 25, 5, 5);
+          ctx.fillRect(x + 30, y + 25, 5, 5);
+        } else {
+          // Bottom aliens - squid-like
+          ctx.fillRect(x + 15, y, 10, 5);
+          ctx.fillRect(x + 5, y + 5, 30, 15);
+          ctx.fillRect(x + 10, y + 20, 20, 5);
+          ctx.fillRect(x + 5, y + 25, 10, 5);
+          ctx.fillRect(x + 25, y + 25, 10, 5);
+        }
+      }
+
+      function drawPlayer(x, y) {
+        ctx.fillStyle = '#00ff41';
+        // Ship body
+        ctx.fillRect(x + 5, y + 15, 40, 15);
+        ctx.fillRect(x + 15, y + 5, 20, 10);
+        ctx.fillRect(x + 22, y, 6, 5);
+      }
+
+      function drawUFO(x, y) {
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(x + 20, y, 20, 8);
+        ctx.fillRect(x + 10, y + 8, 40, 10);
+        ctx.fillRect(x, y + 18, 60, 7);
+      }
+
+      return {
+        clear() {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        },
+
+        draw() {
+          this.clear();
+          const state = gameState.getState();
+
+          // Draw shields
+          ctx.fillStyle = '#00ff41';
+          for (let shield of state.shields) {
+            if (shield.active) {
+              ctx.fillRect(shield.x, shield.y, shield.width, shield.height);
+            }
+          }
+
+          // Draw aliens
+          for (let alien of state.aliens) {
+            if (alien.active) {
+              drawAlien(alien.x, alien.y, alien.row);
+            }
+          }
+
+          // Draw UFO
+          if (state.ufo) {
+            drawUFO(state.ufo.x, state.ufo.y);
+          }
+
+          // Draw player
+          drawPlayer(state.player.x, state.player.y);
+
+          // Draw bullets
+          ctx.fillStyle = '#ffffff';
+          for (let bullet of state.bullets) {
+            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+          }
+
+          // Draw alien bombs
+          ctx.fillStyle = '#ff0000';
+          for (let bomb of state.alienBombs) {
+            ctx.fillRect(bomb.x, bomb.y, bomb.width, bomb.height);
+          }
+
+          // Draw ground line
+          ctx.fillStyle = '#00ff41';
+          ctx.fillRect(0, CANVAS_HEIGHT - 5, CANVAS_WIDTH, 2);
+        },
+
+        updateUI() {
+          const state = gameState.getState();
+          document.getElementById('score').textContent = `Score: ${state.score}`;
+          document.getElementById('high-score').textContent = `High Score: ${state.highScore}`;
+          document.getElementById('lives').textContent = `Lives: ${state.lives}`;
+          document.getElementById('wave').textContent = `Wave: ${state.wave}`;
+        }
+      };
+    }
+
+    // Input Handler
+    function createInputHandler(gameState, restartCallback) {
+      function handleKeyDown(e) {
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          if (restartCallback) restartCallback();
+          return;
+        }
+
+        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+          e.preventDefault();
+          gameState.togglePause();
+          return;
+        }
+
+        const state = gameState.getState();
+        if (state.isPaused) return;
+
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          state.leftPressed = true;
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          state.rightPressed = true;
+        } else if (e.key === ' ') {
+          e.preventDefault();
+          gameState.shoot();
+        }
+      }
+
+      function handleKeyUp(e) {
+        const state = gameState.getState();
+        if (e.key === 'ArrowLeft') state.leftPressed = false;
+        else if (e.key === 'ArrowRight') state.rightPressed = false;
+      }
+
+      return {
+        bindKeys() {
+          document.addEventListener('keydown', handleKeyDown);
+          document.addEventListener('keyup', handleKeyUp);
+        },
+        unbindKeys() {
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('keyup', handleKeyUp);
+        }
+      };
+    }
+
+    // Game initialization
+    const canvas = document.getElementById('board');
+    const gameState = createGameState();
+    const renderer = createRenderer(canvas, gameState);
+    const inputHandler = createInputHandler(gameState, restartGame);
+    let animationId = null;
+
+    function gameLoop() {
+      const state = gameState.getState();
+
+      renderer.draw();
+      renderer.updateUI();
+
+      if (state.gameOver) {
+        showGameOver(state.score);
+        return;
+      }
+
+      if (state.victory) {
+        showVictory(state.score);
+        return;
+      }
+
+      if (!state.isPaused) {
+        gameState.update();
+      }
+
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function showGameOver(score) {
+      pendingScore = score;
+      const gameOverDiv = document.getElementById('game-over');
+      document.getElementById('final-score').textContent = `Final Score: ${score}`;
+
+      const nameInputSection = document.getElementById('name-input-gameover');
+      const nameInput = document.getElementById('player-name-gameover');
+
+      if (isHighScore(score)) {
+        nameInput.value = loadLastName();
+        nameInputSection.style.display = 'block';
+        renderLeaderboard('leaderboard-gameover');
+        nameInput.focus();
+      } else {
+        nameInputSection.style.display = 'none';
+        renderLeaderboard('leaderboard-gameover');
+      }
+
+      gameOverDiv.style.display = 'block';
+    }
+
+    function showVictory(score) {
+      pendingScore = score;
+      const victoryDiv = document.getElementById('victory');
+      document.getElementById('victory-score').textContent = `Final Score: ${score}`;
+
+      const nameInputSection = document.getElementById('name-input-victory');
+      const nameInput = document.getElementById('player-name-victory');
+
+      if (isHighScore(score)) {
+        nameInput.value = loadLastName();
+        nameInputSection.style.display = 'block';
+        renderLeaderboard('leaderboard-victory');
+        nameInput.focus();
+      } else {
+        nameInputSection.style.display = 'none';
+        renderLeaderboard('leaderboard-victory');
+      }
+
+      victoryDiv.style.display = 'block';
+    }
+
+    function restartGame() {
+      if (animationId) cancelAnimationFrame(animationId);
+      document.getElementById('game-over').style.display = 'none';
+      document.getElementById('victory').style.display = 'none';
+      document.getElementById('pause-overlay').style.display = 'none';
+      gameState.reset();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    // Start
+    inputHandler.bindKeys();
+    gameState.reset();
+    animationId = requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
